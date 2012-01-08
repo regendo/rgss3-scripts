@@ -1,14 +1,20 @@
-﻿# by bStefan aka. regendo
+﻿#=================================================
+# by bStefan aka. regendo
 # please give credit if used
 # for use with RMVX ACE
-
-#============================================
+#=================================================
 # GameOver with choices
-#============================================
-# adds three choices to Scene_Gameover:
-# Load Savegame, Return to Title, Quit Game
+#=================================================
+# adds four choices to Scene_Gameover:
+# : Retry Battle (if you lost the battle)
+# : Load Savegame (if there is a savefile)
+# : Return to Title
+# : Quit Game
+#=================================================
 # implement over Main
-#============================================
+# implement under Multiple_Cols_in_Command_Window
+#  if existant
+#=================================================
 
 module Regendo
   
@@ -24,6 +30,8 @@ module Regendo
     #=======
     #CONFIG
     #=======
+	
+	RETRY = true #if false, Retry Battle function will not be aviable
     
     #==============================================
     #requires Horizontal_Command script by regendo
@@ -41,20 +49,24 @@ module Regendo
 end
 
 if Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
-  class Window_GameOver < Window_HorizontalCommand
+  class Window_GameOver < Window_HorizontalCommand #more than one column possible
   end
 else
-  class Window_GameOver < Window_Command
+  class Window_GameOver < Window_Command #only one column
   end
 end
 
 class Window_GameOver
 	def initialize
 		if Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
-      super(0, 0, Regendo::GameOver_Window::COLUMNS)
-    else
-      super(0, 0)
-    end
+          if Regendo::GameOver_Window::COLUMNS
+		    super(0, 0, Regendo::GameOver_Window::COLUMNS)
+		  else
+		    super(0, 0)
+		  end
+        else
+          super(0, 0)
+        end
 		update_placement
 		self.openness = 0
 		open
@@ -62,7 +74,7 @@ class Window_GameOver
 	
   unless Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
     def window_width
-      Regendo::GameOver_Window::WINDOW_WIDTH
+        Regendo::GameOver_Window::WINDOW_WIDTH
     end
   end
   
@@ -71,8 +83,13 @@ class Window_GameOver
 		self.y = (Graphics.height - height) / 1.1
 	end
 	
+	#======================================
+	# add your own to this list
+	# also requires changes at
+	# Scene_Gameover#create_command_window
+	#======================================
 	def make_command_list
-    add_command("Retry Battle", :tryagain) if SceneManager.scene.is_defeat?
+        add_command("Retry Battle", :tryagain) if SceneManager.scene.is_defeat?
 		add_command("Load Savestate", :load, load_enabled)
 		add_command(Vocab::to_title, :to_title)
 		add_command(Vocab::shutdown, :shutdown)
@@ -84,7 +101,7 @@ class Window_GameOver
 end
 
 class Scene_Gameover < Scene_Base
-  attr_reader :command_window
+    attr_reader :command_window
 	alias start_old start
 	def start
 		start_old
@@ -96,9 +113,16 @@ class Scene_Gameover < Scene_Base
 		close_command_window
 	end
 	
+	#======================================
+	# add your own to this list
+	# also requires changes at
+	# Window_GameOver#make_command_list
+	# and requires adding your own methods
+	#======================================
+	
 	def create_command_window
 		@command_window = Window_GameOver.new
-    @command_window.set_handler(:tryagain, method(:command_retry)) if is_defeat?
+        @command_window.set_handler(:tryagain, method(:command_retry)) if is_defeat?
 		@command_window.set_handler(:load, method(:command_load))
 		@command_window.set_handler(:to_title, method(:goto_title))
 		@command_window.set_handler(:shutdown, method(:command_shutdown))
@@ -144,7 +168,7 @@ class Scene_Gameover < Scene_Base
   end
   
   def is_defeat?
-    @defeat
+    Regendo::GameOver_Window::RETRY ? @defeat : false
   end
   
   def battle_setup (troop_id, can_escape = true, can_lose = false)
