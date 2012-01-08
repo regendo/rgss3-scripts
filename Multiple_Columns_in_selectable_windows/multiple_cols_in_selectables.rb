@@ -9,25 +9,38 @@
 # C&P this as a new script above Main
 #==========================================
 
-class Window_HorizontalCommand < Window_Command
+
+module Regendo
   
-  #==============
-  # CONFIG
-  #==============
-  def spacing
-    32
+  unless @scripts
+    @scripts = Hash.new
+    def self.contains?(key)
+      @scripts[key] == true
+    end
   end
+  @scripts["Horizontal_Command"] = true
   
-  def standard_padding
-    12
+  module Horizontal_Command
+    #==============
+    # CONFIG
+    #==============
+    def self.spacing
+      32
+    end
+    
+    def self.standard_padding
+      12
+    end
+    
+    def self.standard_cols
+      2
+    end
   end
-  
-  def standard_cols
-    2
-  end
+end
   #==============
   # Script
   #==============
+class Window_HorizontalCommand < Window_Command  
   def initialize(x = 0, y = 0, cols = standard_cols, width = "fitting")
     col_max(cols)
     @list = []
@@ -71,6 +84,16 @@ class Window_HorizontalCommand < Window_Command
     else
       length.max
     end
+  end
+  
+  def spacing
+    Regendo::Horizontal_Command::spacing
+  end
+  def standard_padding
+    Regendo::Horizontal_Command::standard_padding
+  end
+  def standard_cols
+    Regendo::Horizontal_Command::standard_cols
   end
   
 end
