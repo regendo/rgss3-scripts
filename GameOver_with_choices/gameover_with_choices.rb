@@ -5,26 +5,67 @@
 #============================================
 # GameOver with choices
 #============================================
-# adds four choices to Scene_Gameover:
-# Retry Battle (if you lost the battle)
-# Load Savegame (if there is a savegame)
-# Return to Title, Quit Game
-#============================================
+# adds three choices to Scene_Gameover:
+# Load Savegame, Return to Title, Quit Game
 # implement over Main
 #============================================
 
-class Window_GameOver < Window_Command
+module Regendo
+  
+  unless @scripts
+    @scripts = Hash.new
+    def self.contains?(key)
+      @scripts[key] == true
+    end
+  end
+  @scripts["GameOver_Window"] = true
+  
+  module GameOver_Window
+    #=======
+    #CONFIG
+    #=======
+    
+    #==============================================
+    #requires Horizontal_Command script by regendo
+    #==============================================
+    if Regendo::contains?("Horizontal_Command")
+       USE_MULTIPLE_COLUMNS = true #use Horizontal_Command Script?
+        COLUMNS = 2 #requires ^ set to true
+    end
+     
+    #=================================================
+    #only used if not using Horizontal_Command Script
+    #=================================================
+      WINDOW_WIDTH = 225
+  end
+end
+
+if Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
+  class Window_GameOver < Window_HorizontalCommand
+  end
+else
+  class Window_GameOver < Window_Command
+  end
+end
+
+class Window_GameOver
 	def initialize
-		super(0, 0)
+		if Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
+      super(0, 0, Regendo::GameOver_Window::COLUMNS)
+    else
+      super(0, 0)
+    end
 		update_placement
 		self.openness = 0
 		open
 	end
 	
-	def window_width
-		return 225
-	end
-	
+  unless Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
+    def window_width
+      Regendo::GameOver_Window::WINDOW_WIDTH
+    end
+  end
+  
 	def update_placement
 		self.x = (Graphics.width - width) / 2
 		self.y = (Graphics.height - height) / 1.1
@@ -43,6 +84,7 @@ class Window_GameOver < Window_Command
 end
 
 class Scene_Gameover < Scene_Base
+  attr_reader :command_window
 	alias start_old start
 	def start
 		start_old
@@ -52,10 +94,6 @@ class Scene_Gameover < Scene_Base
 	def pre_terminate
 		super
 		close_command_window
-	end
-	
-	def update
-		super
 	end
 	
 	def create_command_window
