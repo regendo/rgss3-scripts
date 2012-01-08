@@ -1,25 +1,24 @@
-﻿#===================================
-# by bStefan aka. regendo
-# by request from AABattery
-# : http://www.rpgmakervxace.net/index.php?/user/608-aabattery/
-# please give credit if used
-# for use with RMVX ACE
-#===================================
-# Call Scene_Menu while a message
-# : is being displayed
-#===================================
-# implement over Main
-#===================================
-# customize:
-# : add Scenes you don't want the
-# : script to happen to NOCALLMENU
-# : (like Scene_Battle, which would
-# : be really annoying)
-#===================================
-
-class Window_Message < Window_Base
-  NOCALLMENU = [Scene_Battle] #scenes in which call_menu shall not work.
+﻿module Regendo
   
+  unless @scripts
+    @scripts = Hash.new
+    def self.contains?(key)
+      @scripts[key] == true
+    end
+  end
+  @scripts["Menu_during_Message"] = true
+  
+  module Menu_during_Message
+    
+    #=======
+    #CONFIG
+    #=======
+    NOCALLMENU = [Scene_Battle] #scenes in which call_menu shall not work.
+  end
+end
+  
+class Window_Message < Window_Base
+  NOCALLMENU = Regendo::Menu_during_Message::NOCALLMENU
   alias update_old update
   def update
     update_old
