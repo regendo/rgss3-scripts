@@ -27,6 +27,10 @@ module Regendo
   @scripts["GameOver_Window"] = true
   
   module GameOver_Window
+    def self.multiple_cols?
+	  return false unless Regendo::contains?("Horizontal_Command")
+	  USE_MULTIPLE_COLUMNS
+	end
     #=======
     #CONFIG
     #=======
@@ -48,7 +52,7 @@ module Regendo
   end
 end
 
-if Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
+if Regendo::GameOver_Window::multiple_cols?
   class Window_GameOver < Window_HorizontalCommand #more than one column possible
   end
 else
@@ -58,7 +62,7 @@ end
 
 class Window_GameOver
 	def initialize
-		if Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
+		if Regendo::GameOver_Window::multiple_cols?
           if Regendo::GameOver_Window::COLUMNS
 		    super(0, 0, Regendo::GameOver_Window::COLUMNS)
 		  else
@@ -72,7 +76,7 @@ class Window_GameOver
 		open
 	end
 	
-  unless Regendo::GameOver_Window::USE_MULTIPLE_COLUMNS
+  unless Regendo::GameOver_Window::multiple_cols?
     def window_width
         Regendo::GameOver_Window::WINDOW_WIDTH
     end
@@ -152,6 +156,7 @@ class Scene_Gameover < Scene_Base
 	end
   
   def command_retry
+    fadeout_all
     SceneManager.goto(Scene_Battle)
     BattleManager.setup(@troop_id, @can_escape, @can_lose)
     $game_party.members.each do |actor|
@@ -161,6 +166,8 @@ class Scene_Gameover < Scene_Base
       enemy.recover_all
     end
     BattleManager.bmgs_by_regendo(@map_bgm, @map_bgs)
+    BattleManager.play_battle_bgm
+    Sound.play_battle_start
   end
   
   def is_defeat (b = true)
