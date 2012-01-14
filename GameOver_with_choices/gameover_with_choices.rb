@@ -117,6 +117,10 @@ class Scene_Gameover < Scene_Base
 		close_command_window
 	end
 	
+	def update
+		super
+	end
+	
 	#======================================
 	# add your own to this list
 	# also requires changes at
