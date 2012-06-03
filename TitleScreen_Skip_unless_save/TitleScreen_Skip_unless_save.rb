@@ -11,16 +11,16 @@
 #=====================================
 
 module SceneManager
-	def self.run
-		DataManager.init
-		Audio.setup_midi if use_midi?
-		if DataManager.save_file_exists? == false #-
-			DataManager.setup_new_game            # |
-			$game_map.autoplay                    # |
-			SceneManager.goto(Scene_Map)          # | new code
-		else                                      # |
-			@scene = first_scene_class.new        # / this line not
-		end                                       #-
-		@scene.main while @scene
+	class << self
+		alias :f_s_c_skips_title_screen :first_scene_class
+	end
+	def self.first_scene_class
+		if DataManager.save_file_exists?
+			f_s_c_skips_title_screen
+		else
+			DataManager.setup_new_game
+			$game_map.autoplay
+			Scene_Map
+		end
 	end
 end
