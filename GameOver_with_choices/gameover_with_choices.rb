@@ -28,7 +28,7 @@ module Regendo
   
   module GameOver_Window
     def self.multiple_cols?
-	  return false unless Regendo::contains?("Horizontal_Command")
+	  return false unless Regendo.contains?("Horizontal_Command")
 	  USE_MULTIPLE_COLUMNS
 	end
     #=======
@@ -40,7 +40,7 @@ module Regendo
     #==============================================
     #requires Horizontal_Command script by regendo
     #==============================================
-    if Regendo::contains?("Horizontal_Command")
+    if Regendo.contains?("Horizontal_Command")
        USE_MULTIPLE_COLUMNS = true #use Horizontal_Command Script?
         COLUMNS = 2 #requires ^ set to true
     end
@@ -52,7 +52,7 @@ module Regendo
   end
 end
 
-if Regendo::GameOver_Window::multiple_cols?
+if Regendo::GameOver_Window.multiple_cols?
   class Window_GameOver < Window_HorizontalCommand #more than one column possible
   end
 else
@@ -62,7 +62,7 @@ end
 
 class Window_GameOver
 	def initialize
-		if Regendo::GameOver_Window::multiple_cols?
+		if Regendo::GameOver_Window.multiple_cols?
           if Regendo::GameOver_Window::COLUMNS
 		    super(0, 0, Regendo::GameOver_Window::COLUMNS)
 		  else
@@ -76,7 +76,7 @@ class Window_GameOver
 		open
 	end
 	
-  unless Regendo::GameOver_Window::multiple_cols?
+  unless Regendo::GameOver_Window.multiple_cols?
     def window_width
         Regendo::GameOver_Window::WINDOW_WIDTH
     end
@@ -199,7 +199,7 @@ module BattleManager
     alias_method :setup_old, :setup
   end
   def self.setup(troop_id, can_escape = true, can_lose = false)
-    self.setup_old(troop_id, can_escape = true, can_lose = false)
+    self.setup_old(troop_id, can_escape, can_lose)
     @troop_id = troop_id
   end
   
