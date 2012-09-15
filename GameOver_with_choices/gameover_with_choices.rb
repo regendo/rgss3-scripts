@@ -160,6 +160,7 @@ class Scene_Gameover < Scene_Base
 	end
   
   def command_retry
+	close_command_window
     fadeout_all
     SceneManager.goto(Scene_Battle)
     BattleManager.setup(@troop_id, @can_escape, @can_lose)
