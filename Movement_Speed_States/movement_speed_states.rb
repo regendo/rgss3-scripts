@@ -35,6 +35,8 @@
 # 
 # 2.: Setting up the states
 # 
+# This now also applies to weapons and armour parts.
+# 
 # Choose a state (or create a new one)
 # that you want to change your party's
 # movement speed. Note that the movement
@@ -104,6 +106,16 @@ class RPG::State
   end
 end
 
+class RPG::EquipItem < RPG::BaseItem
+  def movement_speed_increase
+    NoteReader.get_data(note, 'MSIncrease', :int)
+  end
+  
+  def movement_speed_modifier
+    NoteReader.get_data(note, 'MSModifier', :int)
+  end
+end
+
 class Game_Player < Game_Character
   
   alias real_move_speed_with_state_modifiers real_move_speed
@@ -125,6 +137,12 @@ class Game_Actor < Game_Battler
     states.each do |s|
       sum += s.movement_speed_increase || 0
     end
+    weapons.each do |w|
+      sum += w.movement_speed_increase || 0
+    end
+    armors.each do |a|
+      sum += a.movement_speed_increase || 0
+    end
     return sum
   end
   
@@ -132,6 +150,14 @@ class Game_Actor < Game_Battler
     mod = 1.0
     states.each do |s|
       mod *= s.movement_speed_modifier || 100
+      mod /= 100
+    end
+    weapons.each do |w|
+      mod *= w.movement_speed_modifier || 100
+      mod /= 100
+    end
+    armors.each do |a|
+      mod *= a.movement_speed_modifier || 100
       mod /= 100
     end
     return mod
