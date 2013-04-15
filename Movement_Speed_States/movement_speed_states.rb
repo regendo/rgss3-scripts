@@ -7,6 +7,13 @@
 #================================
 # for use with RPGMakerVXAce (Enterbrain)
 #================================
+#********************************
+# Version 1.1
+#-----------Changelog------------
+# 1.0: Initial release
+# 1.1: Added armour and weapon functionality
+#********************************
+#================================
 # Terms of Use
 #--------------------------------
 # YOU MAY USE THE SCRIPT
