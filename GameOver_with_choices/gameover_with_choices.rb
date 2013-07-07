@@ -28,21 +28,24 @@ module Regendo
   
   module GameOver_Window
     def self.multiple_cols?
-	  return false unless Regendo.contains?("Horizontal_Command")
-	  USE_MULTIPLE_COLUMNS
-	end
+      return false unless Regendo.contains?("Horizontal_Command")
+      USE_MULTIPLE_COLUMNS
+    end
     #=======
     #CONFIG
     #=======
 	
-	RETRY = true #if false, Retry Battle function will not be aviable
+    RETRY = true #if false, Retry Battle function will not be aviable
+  
+    REGAIN = false # if true, Retry Battle will make the party regain any
+                   #  items, weapons, or armours lost in that battle.
     
     #==============================================
     #requires Horizontal_Command script by regendo
     #==============================================
     if Regendo.contains?("Horizontal_Command")
        USE_MULTIPLE_COLUMNS = true #use Horizontal_Command Script?
-        COLUMNS = 2 #requires ^ set to true
+       COLUMNS = 2 #requires  ^ set to true
     end
      
     #=================================================
@@ -160,15 +163,13 @@ class Scene_Gameover < Scene_Base
 	end
   
   def command_retry
-	close_command_window
+	  close_command_window
     fadeout_all
+    regain_stuff if regain_stuff?
     SceneManager.goto(Scene_Battle)
     BattleManager.setup(@troop_id, @can_escape, @can_lose)
     $game_party.members.each do |actor|
       actor.recover_all
-    end
-    $game_troop.members.each do |enemy|
-      enemy.recover_all
     end
     BattleManager.bmgs_by_regendo(@map_bgm, @map_bgs)
     BattleManager.play_battle_bgm
@@ -183,8 +184,21 @@ class Scene_Gameover < Scene_Base
     Regendo::GameOver_Window::RETRY ? @defeat : false
   end
   
-  def battle_setup (troop_id, can_escape = true, can_lose = false)
-    @troop_id = troop_id
+  def regain_stuff
+    $game_party.regendo_set_items(@items)
+    $game_party.regendo_set_weapons(@weapons)
+    $game_party.regendo_set_armours(@armours)
+  end
+  
+  def regain_stuff?
+    Regendo::GameOver_Window::RETRY ? Regendo::GameOver_Window::REGAIN : false
+  end
+  
+  def battle_setup (regendo_new_values, can_escape = true, can_lose = false)
+    @troop_id = regendo_new_values[:troop_id]
+    @items = regendo_new_values[:items]
+    @weapons = regendo_new_values[:weapons]
+    @armours = regendo_new_values[:armours]
     @can_escape = can_escape
     @can_lose = can_lose
   end
@@ -201,7 +215,11 @@ module BattleManager
   end
   def self.setup(troop_id, can_escape = true, can_lose = false)
     self.setup_old(troop_id, can_escape, can_lose)
-    @troop_id = troop_id
+    @regendo_new_values = {}
+    @regendo_new_values[:troop_id] = troop_id
+    @regendo_new_values[:items] = $game_party.regendo_copy_items
+    @regendo_new_values[:weapons] = $game_party.regendo_copy_weapons
+    @regendo_new_values[:armours] = $game_party.regendo_copy_armours
   end
   
   def self.bmgs_by_regendo(map_bgm, map_bgs)
@@ -218,11 +236,25 @@ module BattleManager
       SceneManager.return
     else
       SceneManager.goto(Scene_Gameover)
-      SceneManager.scene.is_defeat #this is new
-      SceneManager.scene.battle_setup(@troop_id, @can_escape, @can_lose) #this also
-      SceneManager.scene.bgms_setup(@map_bgm, @map_bgs) #and this
+      SceneManager.scene.is_defeat
+      SceneManager.scene.battle_setup(@regendo_new_values, @can_escape, @can_lose) #this also
+      SceneManager.scene.bgms_setup(@map_bgm, @map_bgs)
     end
     battle_end(2)
     return true
   end
+end
+
+class Game_Party < Game_Unit
+  
+  def regendo_copy_items; Marshal.load(Marshal.dump(@items)); end
+  def regendo_copy_weapons; Marshal.load(Marshal.dump(@weapons)); end
+  def regendo_copy_armours; Marshal.load(Marshal.dump(@armors)); end
+  def regendo_copy_armors; Marshal.load(Marshal.dump(@armors)); end
+    
+  def regendo_set_items(new_items); @items = new_items; end
+  def regendo_set_weapons(new_weapons); @weapons = new_weapons; end
+  def regendo_set_armours(new_armours); @armors = new_armours; end
+  def regendo_set_armors(new_armors); @armors = new_armors; end
+  
 end
