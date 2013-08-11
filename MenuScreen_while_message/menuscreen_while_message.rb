@@ -33,7 +33,7 @@ module Regendo
     #CONFIG
     #=======
     NOCALLMENU = [Scene_Battle] #scenes in which call_menu shall not work.
-	BUTTON = Input::B #which button will trigger the menu?
+    BUTTON = Input::B #which button will trigger the menu?
   end
 end
   
