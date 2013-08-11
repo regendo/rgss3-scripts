@@ -1,5 +1,5 @@
 ﻿#==========================================
-# Multiple Cols Command Window
+# Multiple Cols In Selectable
 #==========================================
 # by bStefan aka. regendo
 # requested by monstrumgod
@@ -25,8 +25,7 @@
 #   def give_item
 #     #code
 #   end
-# 5. ???
-# 6. Profit.
+# 5. Enjoy
 #============================================================
 
 
@@ -46,30 +45,24 @@ module Regendo
     #==============
 	
 	#spacing in pixels
-    def self.spacing
-      32
-    end
+    SPACING = 32
     
 	#padding in pixels
-    def self.standard_padding
-      12
-    end
+    PADDING = 12
     
 	#number of columns if no number is given upon calling intialize	
-    def self.standard_cols
-      2
-    end
+    COLS = 2
   end
 end
   #==============
   # Script
   #==============
 class Window_HorizontalCommand < Window_Command  
-  def initialize(x = 0, y = 0, cols = standard_cols, width = "fitting")
+  def initialize(x = 0, y = 0, cols = standard_cols, width = :fitting)
     col_max(cols)
     @list = []
     make_command_list
-    width == "fitting" ? window_width(fitting_width) : window_width(width)
+    width == :fitting ? window_width(fitting_width) : window_width(width)
     clear_command_list
     super(x, y)
   end
@@ -77,8 +70,8 @@ class Window_HorizontalCommand < Window_Command
   # : width. Changing the standard value from 255 to something else, unless
   # : it's a method, will not actually change the result.
   def window_width(width = 255)
-    @width ? @width : @width = width
-    @width > Graphics.width ? @width = Graphics.width : @width
+    @width = width unless @width
+    @width = [Graphics.width, width].min
   end
   
   def col_max(cols = standard_cols)
@@ -111,15 +104,15 @@ class Window_HorizontalCommand < Window_Command
  end
   
   def spacing
-    Regendo::Horizontal_Command::spacing
+    Regendo::Horizontal_Command::SPACING
   end
   
   def standard_padding
-    Regendo::Horizontal_Command::standard_padding
+    Regendo::Horizontal_Command::PADDING
   end
   
   def standard_cols
-    Regendo::Horizontal_Command::standard_cols
+    Regendo::Horizontal_Command::COLS
   end
   
 end
