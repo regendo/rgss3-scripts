@@ -38,8 +38,10 @@ module Regendo
 end
   
 class Window_Message < Window_Base
+
   BUTTON = Regendo::Menu_during_Message::BUTTON
   NOCALLMENU = Regendo::Menu_during_Message::NOCALLMENU
+  
   alias update_old update
   def update
     update_old
@@ -55,26 +57,24 @@ class Window_Message < Window_Base
   def input_pause
     self.pause = true
     wait(10)
-	case BUTTON
-	when Input::B
-	  Fiber.yield until Input.trigger?(:C)
-	when Input::C
-	  Fiber.yield until Input.trigger?(:B)
-	else
+    
+    case BUTTON
+    when Input::B
+      Fiber.yield until Input.trigger?(:C)
+    when Input::C
+      Fiber.yield until Input.trigger?(:B)
+    else
       Fiber.yield until Input.trigger?(:B) || Input.trigger?(:C)
-	end
+    end
+    
     Input.update
     self.pause = false
   end
   
   def forbidden_scene_by_regendo
-    if NOCALLMENU
-      a = NOCALLMENU.any? do |scene|
-        SceneManager.scene_is?(scene)
-      end
-      a
-    else
-      false
+    return false unless NOCALLMENU
+    NOCALLMENU.any? do |scene|
+      SceneManager.scene_is?(scene)
     end
   end
 end
