@@ -60,7 +60,7 @@ module Regendo
     
     # use a window with multiple columns
     # requires Multiple Cols in Command Windows script by regendo
-    USE_MULTIPLE_COLS = false
+    USE_MULTIPLE_COLS = true
     COL_NUMBER = 2
     
     # X and Y coordinates for the window as a String
@@ -68,6 +68,10 @@ module Regendo
     # default Y: "[(Graphics.height - height)/1.1, 0].max"
     X_COORD = "[(Graphics.width - width)/2, 0].max"
     Y_COORD = "[(Graphics.height - height)/1.1, 0].max"
+    
+    # window width as a string
+    # only applies if not using the multiple columns script
+    WIDTH = "Graphics.width * 0.4"
     
   end
 end
@@ -159,20 +163,20 @@ class Window_GameOver
 
   def initialize
     if (Regendo.contains?("Horizontal_Command") && Regendo::GameOver_Window::USE_MULTIPLE_COLS)
-      super(0, 0, Regendo::GameOver_Window::COL_NUMBER)
       @horz = true
+      super(0, 0, Regendo::GameOver_Window::COL_NUMBER)
     else
-      super(0, 0)
       @horz = false
+      super(0, 0)
     end
     update_placement
     self.openness = 0
     open
   end
   
-  def window_width
+  def window_width(width = 255)
     return super if @horz
-    return Graphics.width * 0.4
+    @width = eval(Regendo::GameOver_Window::WIDTH)
   end
   
   def update_placement
