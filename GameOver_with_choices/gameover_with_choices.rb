@@ -51,7 +51,7 @@ module Regendo
     # allows a lost battle to be retried
     # retry only works when "continue even if lose" is not checked
     # set by script call: Regendo::GameOver_Window::ALLOW_RETRY = true/false
-    ALLOW_RETRY = false
+    ALLOW_RETRY = true
     
     # allows loading a save file
     # set by script call: Regendo::GameOver_Window::ALLOW_LOAD_GAME = true/false
@@ -100,7 +100,7 @@ class Scene_Gameover < Scene_Base
   end
   
   def set_handlers
-    @command_window.set_handler(:retry, method(:command_retry))
+    @command_window.set_handler(:retry, method(:command_retry)) if @defeat && Regendo::GameOver_Window::ALLOW_RETRY
     @command_window.set_handler(:load, method(:command_load_game))
     @command_window.set_handler(:to_title, method(:goto_title))
     @command_window.set_handler(:shutdown, method(:command_shutdown))
@@ -112,7 +112,21 @@ class Scene_Gameover < Scene_Base
   end
   
   def command_retry
-    # TODO
+    SceneManager.goto(Scene_Battle)
+    
+    troop_id = @regendo_gowc_values[:troop_id]
+    can_escape = @regendo_gowc_values[:can_escape]
+    can_lose = @regendo_gowc_values[:can_lose]
+    bgm = @regendo_gowc_values[:bgm]
+    bgs = @regendo_gowc_values[:bgs]
+    
+    BattleManager.setup(troop_id, can_escape, can_lose)
+    $game_party.members.each do |member|
+      member.recover_all
+    end
+    BattleManager.set_regendo_gowc_bgms(bgm, bgs)
+    BattleManager.play_battle_bgm
+    Sound.play_battle_start
   end
   
   def command_load_game
@@ -121,6 +135,14 @@ class Scene_Gameover < Scene_Base
   
   def command_shutdown
     SceneManager.exit
+  end
+  
+  def set_regendo_gowc_values(value)
+    @regendo_gowc_values = value
+  end
+  
+  def set_defeat
+    @defeat = true
   end
   
 end
@@ -181,13 +203,45 @@ end
 module BattleManager
   
   class << self
-    alias_method :setup_old, :setup
+    alias_method :setup_regendo_gowc, :setup
+    alias_method :save_regendo_gowc_bgms, :save_bgm_and_bgs
   end
   
   def self.setup(troop_id, can_escape = true, can_lose = false)
-    setup_old(troop_id, can_escape, can_lose)
+    setup_regendo_gowc(troop_id, can_escape, can_lose)
     @regendo_gameover_values = Hash.new
     @regendo_gameover_values[:troop_id] = troop_id
+  end
+  
+  def self.process_defeat
+    $game_message.add(sprintf(Vocab::Defeat, $game_party.name))
+    wait_for_message
+    if @can_lose
+      revive_battle_members
+      replay_bgm_and_bgs
+      SceneManager.return
+    else
+      SceneManager.goto(Scene_Gameover)
+      # start of new part
+      SceneManager.scene.set_defeat
+      SceneManager.scene.set_regendo_gowc_values(@regendo_gameover_values)
+      # end of new part
+    end
+    battle_end(2)
+    return true
+  end
+  
+  def self.save_bgm_and_bgs
+    save_regendo_gowc_bgms
+    @regendo_gameover_values[:bgm] = @map_bgm
+    @regendo_gameover_values[:bgs] = @map_bgs
+  end
+  
+  def self.set_regendo_gowc_bgms(bgm, bgs)
+    @map_bgm = bgm
+    @map_bgs = bgs
+    @regendo_gameover_values[:bgm] = bgm
+    @regendo_gameover_values[:bgs] = bgs
   end
   
 end
