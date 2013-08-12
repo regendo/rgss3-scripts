@@ -62,7 +62,7 @@ class Window_HorizontalCommand < Window_Command
     col_max(cols)
     @list = []
     make_command_list
-    width == :fitting ? window_width(fitting_width) : window_width(width)
+    window_width(width == :fitting ? fitting_width : width)
     clear_command_list
     super(x, y)
   end
@@ -70,12 +70,11 @@ class Window_HorizontalCommand < Window_Command
   # : width. Changing the standard value from 255 to something else, unless
   # : it's a method, will not actually change the result.
   def window_width(width = 255)
-    @width = width unless @width
-    @width = [Graphics.width, width].min
+    @width ||= [Graphics.width, width].min
   end
   
   def col_max(cols = standard_cols)
-    @cols ? @cols : @cols = cols
+    @cols ||= cols
   end
   
   def visible_line_number
