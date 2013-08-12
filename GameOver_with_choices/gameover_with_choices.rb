@@ -16,10 +16,10 @@
 #========================
 # CHANGELOG
 #========================
-# current release: 2.0-gowc pre
+# current release: 2.0-gowc
 # current release notes:
 # # complete rewrite
-# # 1.3 functionalities supported:
+# # 1.3 functionalities supported: 6/6
 # # # Quit Game (y)
 # # # To Title (y)
 # # # Load Savefile (y)
@@ -27,7 +27,6 @@
 # # # MCIS compability (y)
 # # # Restore lost items (y)
 # # now with more customisation!
-# # no battle music plays upon retry
 #------------------------
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
@@ -42,7 +41,9 @@
 # Compability check:
 #-------------------------------
 # class Scene_Gameover:
+# # 2 aliases
 # # various overwrites
+# # a few new methods
 # class Window_GameOver:
 # # completely new
 # class Game_Party:
@@ -111,6 +112,7 @@ end
 class Scene_Gameover < Scene_Base
   
   alias :start_with_regendo_gameover_window :start
+  alias :regendo_gowc_goto_title :goto_title
   def start
     start_with_regendo_gameover_window
     create_command_window
@@ -125,7 +127,6 @@ class Scene_Gameover < Scene_Base
   def pre_terminate
     super
     close_command_window
-    fadeout_all
   end
   
   def create_command_window
@@ -145,8 +146,14 @@ class Scene_Gameover < Scene_Base
     update until @command_window.close?
   end
   
+  def goto_title
+    fadeout_all
+    regendo_gowc_goto_title
+  end
+  
   def command_retry
     SceneManager.goto(Scene_Battle)
+    fadeout_all
     
     troop_id = @regendo_gowc_values[:troop_id]
     can_escape = @regendo_gowc_values[:can_escape]
@@ -171,6 +178,7 @@ class Scene_Gameover < Scene_Base
   
   def command_load_game
     SceneManager.goto(Scene_Load)
+    fadeout_all
   end
   
   def command_shutdown
