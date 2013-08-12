@@ -1,5 +1,5 @@
 ﻿#========================
-# GameOver with Choices
+# GameOver with Choices (GOWC)
 #------------------------
 # for RMVXAce
 #========================
@@ -19,7 +19,14 @@
 # current release: 2.0-gowc pre
 # current release notes:
 # # complete rewrite
-# # not all functionalities already supported
+# # 1.3 functionalities supported:
+# # # Quit Game (y)
+# # # To Title (y)
+# # # Load Savefile (y)
+# # # Retry Battle (y)
+# # # MCIS compability (y)
+# # # Restore lost items (n)
+# # now with more customisation!
 #------------------------
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
