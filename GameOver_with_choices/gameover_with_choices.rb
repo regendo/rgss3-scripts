@@ -25,8 +25,9 @@
 # # # Load Savefile (y)
 # # # Retry Battle (y)
 # # # MCIS compability (y)
-# # # Restore lost items (n)
+# # # Restore lost items (y)
 # # now with more customisation!
+# # no battle music plays upon retry
 #------------------------
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
@@ -35,6 +36,22 @@
 # 1.0   - initial release
 
 # above update notes do not include minor updates such as bug fixes
+#========================
+
+#========================
+# Compability check:
+#-------------------------------
+# class Scene_Gameover:
+# # various overwrites
+# class Window_GameOver:
+# # completely new
+# class Game_Party:
+# # 6 new methods
+# module BattleManager:
+# # 2 aliases
+# # 1 new method
+# # overwrites:
+# # # process_defeat
 #========================
 
 module Regendo
@@ -79,6 +96,12 @@ module Regendo
     # window width as a string
     # only applies if not using the multiple columns script
     WIDTH = "Graphics.width * 0.4"
+    
+    # regain lost/used stuff when retrying battle?
+    # set by script call: Regendo::GameOver_Window::REGAIN_ITEMS/ARMOURS/WEAPONS = true/false
+    REGAIN_ITEMS = true
+    REGAIN_ARMOURS = true
+    REGAIN_WEAPONS = true
     
   end
 end
@@ -130,11 +153,17 @@ class Scene_Gameover < Scene_Base
     can_lose = @regendo_gowc_values[:can_lose]
     bgm = @regendo_gowc_values[:bgm]
     bgs = @regendo_gowc_values[:bgs]
+    items = @regendo_gowc_values[:items]
+    weapons = @regendo_gowc_values[:weapons]
+    armours = @regendo_gowc_values[:armours]
     
     BattleManager.setup(troop_id, can_escape, can_lose)
     $game_party.members.each do |member|
       member.recover_all
     end
+    $game_party.regendo_gowc_set_items(items) if Regendo::GameOver_Window::REGAIN_ITEMS
+    $game_party.regendo_gowc_set_armours(armours) if Regendo::GameOver_Window::REGAIN_ARMOURS
+    $game_party.regendo_gowc_set_weapons(weapons) if Regendo::GameOver_Window::REGAIN_WEAPONS
     BattleManager.set_regendo_gowc_bgms(bgm, bgs)
     BattleManager.play_battle_bgm
     Sound.play_battle_start
@@ -208,6 +237,14 @@ class Window_GameOver
 end
 
 class Game_Party < Game_Unit
+
+  def regendo_gowc_get_items; return @items; end
+  def regendo_gowc_get_weapons; return @weapons; end
+  def regendo_gowc_get_armours; return @armours; end
+  
+  def regendo_gowc_set_items(items); @items = items; end
+  def regendo_gowc_set_weapons(weapons); @weapons = weapons; end
+  def regendo_gowc_set_armours(armours); @armours = armours; end
   
 end
 
@@ -222,6 +259,7 @@ module BattleManager
     setup_regendo_gowc(troop_id, can_escape, can_lose)
     @regendo_gameover_values = Hash.new
     @regendo_gameover_values[:troop_id] = troop_id
+    regendo_gowc_get_iaw
   end
   
   def self.process_defeat
@@ -255,4 +293,10 @@ module BattleManager
     @regendo_gameover_values[:bgs] = bgs
   end
   
+  # gets party's items, armours, weapons
+  def self.regendo_gowc_get_iaw
+    @regendo_gameover_values[:items] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_items))
+    @regendo_gameover_values[:armours] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_armours))
+    @regendo_gameover_values[:weapons] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_weapons))
+  end
 end
