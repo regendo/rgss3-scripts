@@ -16,17 +16,10 @@
 #========================
 # CHANGELOG
 #========================
-# current release: 2.0-gowc
+# current release: 2.1-gowc pre
 # current release notes:
-# # complete rewrite
-# # 1.3 functionalities supported: 6/6
-# # # Quit Game (y)
-# # # To Title (y)
-# # # Load Savefile (y)
-# # # Retry Battle (y)
-# # # MCIS compability (y)
-# # # Restore lost items (y)
-# # now with more customisation!
+# # can lose gold on battle retry
+# # chance to lose gold on battle retry
 #------------------------
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
@@ -104,6 +97,21 @@ module Regendo
     REGAIN_ARMOURS = true
     REGAIN_WEAPONS = true
     
+    # chance to lose gold on battle retry
+    # 1: lose gold
+    # 0: don't lose gold
+    # use floating point numbers for percentages, e.g. 0.854 for a 85.4% chance of losing gold
+    LOSE_GOLD_CHANCE = 0.5
+    # amount of gold lost as a string
+    # examples:
+    # # "500": lose 500 gold
+    # # "250 * $game_party.battle_members.size": 250 gold per battle member
+    # # "$game_party.gold": lose all gold
+    # # "$game_party.gold * 0.5": lose half of your gold
+    # # "$game_party.gold * Random.rand * 0.5": lose up to half of your money
+    # get creative!
+    LOSE_GOLD_AMOUNT = "$game_party.gold * 0.25"
+    
   end
 end
 
@@ -171,6 +179,7 @@ class Scene_Gameover < Scene_Base
     $game_party.regendo_gowc_set_items(items) if Regendo::GameOver_Window::REGAIN_ITEMS
     $game_party.regendo_gowc_set_armours(armours) if Regendo::GameOver_Window::REGAIN_ARMOURS
     $game_party.regendo_gowc_set_weapons(weapons) if Regendo::GameOver_Window::REGAIN_WEAPONS
+    regendo_gowc_lose_gold
     BattleManager.set_regendo_gowc_bgms(bgm, bgs)
     BattleManager.play_battle_bgm
     Sound.play_battle_start
@@ -183,6 +192,20 @@ class Scene_Gameover < Scene_Base
   
   def command_shutdown
     SceneManager.exit
+  end
+  
+  def regendo_gowc_lose_gold
+    return unless regendo_gowc_do_lose_gold?
+    amount = [eval(Regendo::GameOver_Window::LOSE_GOLD_AMOUNT).abs.round, $game_party.gold].min
+    $game_party.lose_gold(amount)
+  end
+  
+  def regendo_gowc_do_lose_gold?
+    chance = [Regendo::GameOver_Window::LOSE_GOLD_CHANCE.to_f.abs, 1.0].min
+    return false if chance == 0.0
+    return true if chance == 1.0
+    roll = Random.rand
+    roll <= chance
   end
   
   def set_regendo_gowc_values(value)
