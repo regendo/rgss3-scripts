@@ -1,0 +1,20 @@
+﻿As specified in the Terms of Use, which can be found in README.md,
+all of my scripts can be used in non-commercial RPGMakerVXAce projects
+without special permission.
+
+Furthermore, my scripts cannot be used in commercial RPGMakerVXAce
+projects without that special permission.
+
+Since anyone could fake a permission, I decided to provide a public list of
+these permissions. If you know of a commercial RMVXAce project that is
+using any of my scripts and that is not listed below, please contact me
+immediately in GitHub or on RMVXAce.net.
+
+The following people are allowed to use certain scripts in commercial projects.
+The Terms of Use specified in the latest version of README.md still apply.
+
+- azureguy (http://www.rpgmakervxace.net/user/16056-azureguy/)
+
+  This person has permission to use any version of GOWC for their
+  project "Life of a Copycat" (http://www.indiedb.com/forum/thread/life-of-a-copycat-feedback-required)
+  regardless of whether or not the project will be released commercially.
