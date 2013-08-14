@@ -28,8 +28,9 @@
 # # # chance to lose regular items on battle retry
 # # # chance to lose unequipped armour parts on battle retry
 # # # chance to lose unequipped weapons on battle retry
+# # bugfixes:
+# # # items used in the first and subsequent retries are now properly restored
 # # not working as intended:
-# # # consumable key items are not regained
 # # missing features:
 # # # player does not get notified about losing gold/items
 #------------------------
@@ -168,7 +169,7 @@ module Regendo
     # can you lose items? (key items can't be lost)
     CAN_LOSE_ITEMS = true
     # can you lose armours? (equipped items can't be lost)
-    CAN_LOSE_ARMOURS = false
+    CAN_LOSE_ARMOURS = true
     # can you lose weapons? (equipped items can't be lost)
     CAN_LOSE_WEAPONS = true
     
@@ -231,9 +232,9 @@ class Scene_Gameover < Scene_Base
       member.recover_all
     end
     
-    items = @regendo_gowc_values[:items]
-    weapons = @regendo_gowc_values[:weapons]
-    armours = @regendo_gowc_values[:armours]
+    items = Marshal.load(Marshal.dump(@regendo_gowc_values[:items]))
+    weapons = Marshal.load(Marshal.dump(@regendo_gowc_values[:weapons]))
+    armours = Marshal.load(Marshal.dump(@regendo_gowc_values[:armours]))
     $game_party.regendo_gowc_set_items(items) if Regendo::GameOver_Window::REGAIN_ITEMS
     $game_party.regendo_gowc_set_armours(armours) if Regendo::GameOver_Window::REGAIN_ARMOURS
     $game_party.regendo_gowc_set_weapons(weapons) if Regendo::GameOver_Window::REGAIN_WEAPONS
