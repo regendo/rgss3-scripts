@@ -6,12 +6,17 @@
 # brought to you by
 # regendo, aka. bStefan
 #------------------------
-# up-to-date versions are exclusively available at
+# up-to-date versions of this script are exclusively available at
 # http://www.rpgmakervxace.net/topic/357-gameover-with-choices/
 # and https://github.com/regendo/rgss3-scripts
 #========================
 
 # The Terms of Use specified in the README.md file in the github repository apply to this script.
+
+
+# This script is Paste & Play compatible. You can use this script without modifying anything.
+# However, looking at the customisation options is strongly recommended.
+
 
 #========================
 # CHANGELOG
@@ -23,12 +28,12 @@
 # # # chance to lose regular items on battle retry
 # # # chance to lose unequipped armour parts on battle retry
 # # # chance to lose unequipped weapons on battle retry
-# # new bugs:
-# # persisting bugs:
+# # not working as intended:
 # # # consumable key items are not regained
 # # missing features:
 # # # player does not get notified about losing gold/items
 #------------------------
+# 2.1   - now has a chance to lose gold, items, armour parts, weapons upon retrying battles
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
 # 1.2   - now compatible with "Multiple Columns in selectable windows" script by regendo
@@ -43,16 +48,50 @@
 #-------------------------------
 # class Scene_Gameover:
 # # 2 aliases
-# # various overwrites
-# # a few new methods
+# # # start_with_regendo_gameover_window
+# # # regendo_gowc_goto_title
+# # 2 overwrites
+# # # update
+# # # pre_terminate
+# # 11 new methods
+# # # create_command_window
+# # # set_handlers
+# # # close_command_window
+# # # command_retry
+# # # command_load_game
+# # # command_shutdown
+# # # regendo_gowc_lose_gold
+# # # regendo_gowc_lose_items
+# # # regendo_gowc_check_rng(percentage)
+# # # set_regendo_gowc_values(gowc_values)
+# # # set_defeat
+#-------------------------------
 # class Window_GameOver:
 # # completely new
+#-------------------------------
 # class Game_Party:
 # # 6 new methods
+# # # regendo_gowc_get_items
+# # # regendo_gowc_get_weapons
+# # # regendo_gowc_get_armours
+# # # regendo_gowc_set_items(items)
+# # # regendo_gowc_set_weapons(weapons)
+# # # regendo_gowc_set_armours(armours)
+# # 2 aliases
+# # # regendo_gowc_get_armors
+# # # regendo_gowc_set_armors(armors)
+#-------------------------------
 # module BattleManager:
 # # 2 aliases
+# # # setup_regendo_gowc
+# # # save_regendo_gowc_bgms
 # # 5 new methods
-# # overwrites:
+# # # setup_regendo_gowc_retry
+# # # initialize_regendo_gowc_values
+# # # regendo_gowc_do_lose_items
+# # # set_regendo_gowc_bgms(bgm, bgs)
+# # # regendo_gowc_get_iaw
+# # 1 overwrite
 # # # process_defeat
 #========================
 
@@ -295,8 +334,8 @@ class Scene_Gameover < Scene_Base
     roll <= chance
   end
   
-  def set_regendo_gowc_values(value)
-    @regendo_gowc_values = value
+  def set_regendo_gowc_values(values)
+    @regendo_gowc_values = values
   end
   
   def set_defeat
