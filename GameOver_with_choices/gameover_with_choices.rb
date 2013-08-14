@@ -18,8 +18,16 @@
 #========================
 # current release: 2.1-gowc pre
 # current release notes:
-# # can lose gold on battle retry
-# # chance to lose gold on battle retry
+# # new features:
+# # # chance to lose gold on battle retry
+# # # chance to lose regular items on battle retry
+# # # chance to lose unequipped armour parts on battle retry
+# # # chance to lose unequipped weapons on battle retry
+# # new bugs:
+# # persisting bugs:
+# # # consumable key items are not regained
+# # missing features:
+# # # player does not get notified about losing gold/items
 #------------------------
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
@@ -43,7 +51,7 @@
 # # 6 new methods
 # module BattleManager:
 # # 2 aliases
-# # 1 new method
+# # 5 new methods
 # # overwrites:
 # # # process_defeat
 #========================
@@ -112,6 +120,19 @@ module Regendo
     # get creative!
     LOSE_GOLD_AMOUNT = "$game_party.gold * 0.25"
     
+    # chance of losing items when retrying
+    LOSE_ITEMS_CHANCE = 0
+    
+    # max. amount of items lost at the same time
+    LOSE_ITEMS_MAX_TIMES = 4
+    
+    # can you lose items? (key items can't be lost)
+    CAN_LOSE_ITEMS = true
+    # can you lose armours? (equipped items can't be lost)
+    CAN_LOSE_ARMOURS = false
+    # can you lose weapons? (equipped items can't be lost)
+    CAN_LOSE_WEAPONS = true
+    
   end
 end
 
@@ -163,24 +184,21 @@ class Scene_Gameover < Scene_Base
     SceneManager.goto(Scene_Battle)
     fadeout_all
     
-    troop_id = @regendo_gowc_values[:troop_id]
-    can_escape = @regendo_gowc_values[:can_escape]
-    can_lose = @regendo_gowc_values[:can_lose]
-    bgm = @regendo_gowc_values[:bgm]
-    bgs = @regendo_gowc_values[:bgs]
-    items = @regendo_gowc_values[:items]
-    weapons = @regendo_gowc_values[:weapons]
-    armours = @regendo_gowc_values[:armours]
+    regendo_gowc_lose_gold
+    regendo_gowc_lose_items
     
-    BattleManager.setup(troop_id, can_escape, can_lose)
+    BattleManager.setup_regendo_gowc_retry(@regendo_gowc_values)
     $game_party.members.each do |member|
       member.recover_all
     end
+    
+    items = @regendo_gowc_values[:items]
+    weapons = @regendo_gowc_values[:weapons]
+    armours = @regendo_gowc_values[:armours]
     $game_party.regendo_gowc_set_items(items) if Regendo::GameOver_Window::REGAIN_ITEMS
     $game_party.regendo_gowc_set_armours(armours) if Regendo::GameOver_Window::REGAIN_ARMOURS
     $game_party.regendo_gowc_set_weapons(weapons) if Regendo::GameOver_Window::REGAIN_WEAPONS
-    regendo_gowc_lose_gold
-    BattleManager.set_regendo_gowc_bgms(bgm, bgs)
+    
     BattleManager.play_battle_bgm
     Sound.play_battle_start
   end
@@ -195,13 +213,82 @@ class Scene_Gameover < Scene_Base
   end
   
   def regendo_gowc_lose_gold
-    return unless regendo_gowc_do_lose_gold?
+    return unless regendo_gowc_check_rng(Regendo::GameOver_Window::LOSE_GOLD_CHANCE)
     amount = [eval(Regendo::GameOver_Window::LOSE_GOLD_AMOUNT).abs.round, $game_party.gold].min
     $game_party.lose_gold(amount)
+    @regendo_gowc_values[:gold] += amount
   end
   
-  def regendo_gowc_do_lose_gold?
-    chance = [Regendo::GameOver_Window::LOSE_GOLD_CHANCE.to_f.abs, 1.0].min
+  def regendo_gowc_lose_items
+    
+    items = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_items))
+    armours = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_armours))
+    weapons = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_weapons))
+    
+    # removes key items from list
+    items.delete_if { |key, value| $data_items[key].key_item? }
+    
+    Regendo::GameOver_Window::LOSE_ITEMS_MAX_TIMES.times do
+      next unless regendo_gowc_check_rng(Regendo::GameOver_Window::LOSE_ITEMS_CHANCE)
+      
+      i = Regendo::GameOver_Window::CAN_LOSE_ITEMS && !items.empty?
+      a = Regendo::GameOver_Window::CAN_LOSE_ARMOURS && !armours.empty?
+      w = Regendo::GameOver_Window::CAN_LOSE_WEAPONS && !weapons.empty?
+      
+      val = [i, a, w].count(true)
+      case val
+      when 0
+        return
+      when 1
+        kind = :item if i
+        kind = :armour if a
+        kind = :weapon if w
+      when 2
+        roll = Random.rand
+        if roll <= 0.5
+          kind = :item if i
+          kind ||= :armour if a
+        else
+          kind = :weapon if w
+          kind ||= armour if a
+        end #if
+      when 3
+        roll = Random.rand
+        if roll <= 1.0/3
+          kind = :item
+        elsif roll <= 2.0/3
+          kind = :armour
+        else
+          kind = :weapon
+        end #if
+      end #case
+      
+      list = case kind
+        when :item
+          items
+        when :armour
+          armours
+        when :weapon
+          weapons
+        end
+      dumb_list = []
+      list.each_pair do |key, value|
+        value.times { dumb_list << key }
+      end
+      dumb_list.sort!
+      
+      item_id = dumb_list[Random.rand(dumb_list.size)]
+      
+      li = @regendo_gowc_values[:items_scheduled_lose][kind]
+      li.has_key?(item_id) ? li[item_id] += 1 : li[item_id] = 1
+      list[item_id] -= 1
+      list.delete_if { |key, value| value < 1 }
+      
+    end #loop
+  end #method
+  
+  def regendo_gowc_check_rng(percentage)
+    chance = [percentage.to_f.abs, 1.0].min
     return false if chance == 0.0
     return true if chance == 1.0
     roll = Random.rand
@@ -271,11 +358,13 @@ class Game_Party < Game_Unit
 
   def regendo_gowc_get_items; return @items; end
   def regendo_gowc_get_weapons; return @weapons; end
-  def regendo_gowc_get_armours; return @armours; end
+  def regendo_gowc_get_armours; return @armors; end
+  alias :regendo_gowc_get_armors :regendo_gowc_get_armours
   
   def regendo_gowc_set_items(items); @items = items; end
   def regendo_gowc_set_weapons(weapons); @weapons = weapons; end
-  def regendo_gowc_set_armours(armours); @armours = armours; end
+  def regendo_gowc_set_armours(armours); @armors = armours; end
+  alias :regendo_gowc_set_armors :regendo_gowc_set_armours
   
 end
 
@@ -286,12 +375,56 @@ module BattleManager
     alias_method :save_regendo_gowc_bgms, :save_bgm_and_bgs
   end
   
-  def self.setup(troop_id, can_escape = true, can_lose = false)
+  def self.setup_regendo_gowc_retry(gowc_values)
+    @regendo_gameover_values = gowc_values
+    troop_id = @regendo_gameover_values[:troop_id]
+    can_escape = @regendo_gameover_values[:can_lose]
+    can_lose = @regendo_gameover_values[:can_lose]
+    @regendo_gameover_values[:is_retry] = true
+    @regendo_gameover_values[:times_retry] += 1
+    setup(troop_id, can_escape, can_lose)
+    regendo_gowc_do_lose_items
+  end
+  
+  def self.setup(troop_id, can_escape, can_lose)
     setup_regendo_gowc(troop_id, can_escape, can_lose)
+    initialize_regendo_gowc_values(troop_id)
+    set_regendo_gowc_bgms(@regendo_gameover_values[:bgm], @regendo_gameover_values[:bgs])
+  end
+  
+  def self.initialize_regendo_gowc_values(troop_id)
+    return if @regendo_gameover_values
     @regendo_gameover_values = Hash.new
+    @regendo_gameover_values[:gold] = 0
     @regendo_gameover_values[:troop_id] = troop_id
+    @regendo_gameover_values[:can_escape] = @can_escape
+    @regendo_gameover_values[:can_lose] = @can_lose
+    @regendo_gameover_values[:is_retry] = false
+    @regendo_gameover_values[:times_retry] = 0
+    @regendo_gameover_values[:items_lost] = { :item => {}, :armour => {}, :weapon => {} }
+    @regendo_gameover_values[:items_scheduled_lose] = { :item => {}, :armour => {}, :weapon => {} }
     regendo_gowc_get_iaw
   end
+  
+  def self.regendo_gowc_do_lose_items
+    @regendo_gameover_values[:items_scheduled_lose].each_pair do |kind, list|
+      list.each_pair do |id, count|
+        item = case kind
+          when :item
+            $data_items[id]
+          when :armour
+            $data_armors[id]
+          when :weapon
+            $data_weapons[id]
+          end#case
+        $game_party.lose_item(item, count)
+        li = @regendo_gameover_values[:items_lost][kind]
+        li.has_key?(id) ? li[id] += count : li[id] = count
+        list[id] = 0
+      end #list.each_pair
+      list.delete_if { |id, count| count < 1 }
+    end#each_pair
+  end#method
   
   def self.process_defeat
     $game_message.add(sprintf(Vocab::Defeat, $game_party.name))
@@ -320,8 +453,8 @@ module BattleManager
   def self.set_regendo_gowc_bgms(bgm, bgs)
     @map_bgm = bgm
     @map_bgs = bgs
-    @regendo_gameover_values[:bgm] = bgm
-    @regendo_gameover_values[:bgs] = bgs
+    @regendo_gameover_values[:bgm] = @map_bgm
+    @regendo_gameover_values[:bgs] = @map_bgs
   end
   
   # gets party's items, armours, weapons
