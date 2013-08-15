@@ -62,12 +62,15 @@ version apply to all prior versions of the same script.
 6. You cannot use any of these scripts in your project(s) without paying attention
    to and following these Terms of Use.
 7. These Terms of Use may be modified or extended upon by regendo at any time.
+
     (i)   Before releasing your commercial or non-commercial project, please make sure
           that your project follows the most recent version of these Terms of Use that
           can be found in the most recent version of this document.
+          
     (ii)  Changes made to the Terms of Use after the initial release of the full version
           of your project do not apply to your project or future patches of the same project.
-    (iii)  Sequels, expansions, and other additional releases that are not merely patches to
+          
+    (iii) Sequels, expansions, and other additional releases that are not merely patches to
           your project are treated as individual projects. Each of them will need a granted
           permission if it is a commercial project and will need to follow the latest Terms of Use
           at the time of the initial release of their full version.
