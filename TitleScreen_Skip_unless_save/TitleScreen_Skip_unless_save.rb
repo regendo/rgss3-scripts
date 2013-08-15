@@ -1,4 +1,6 @@
 ﻿#=====================================
+# TitleScreen Skip unless save (TSS)
+#=====================================
 # by bStefan aka. regendo
 # please give credit if used
 # for use with RMVX ACE

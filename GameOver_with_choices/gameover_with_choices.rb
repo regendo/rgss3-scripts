@@ -21,7 +21,7 @@
 #========================
 # CHANGELOG
 #========================
-# current release: 2.1-gowc pre
+# current release: 2.1-gowc
 # current release notes:
 # # new features:
 # # # chance to lose gold on battle retry

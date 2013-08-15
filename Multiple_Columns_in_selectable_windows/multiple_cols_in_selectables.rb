@@ -1,5 +1,5 @@
 ﻿#==========================================
-# Multiple Cols In Selectable
+# Multiple Cols In Selectable (MCIS)
 #==========================================
 # by bStefan aka. regendo
 # requested by monstrumgod

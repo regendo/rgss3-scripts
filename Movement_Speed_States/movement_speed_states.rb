@@ -1,5 +1,5 @@
 ﻿#================================
-# Movement Speed States
+# Movement Speed States (MSS)
 #================================
 # by: regendo/bStefan
 # available on RPGMakerVXAce.net
@@ -8,7 +8,7 @@
 # for use with RPGMakerVXAce (Enterbrain)
 #================================
 #********************************
-# Version 1.1
+# Version 1.1-mss
 #-----------Changelog------------
 # 1.0: Initial release
 # 1.1: Added armour and weapon functionality

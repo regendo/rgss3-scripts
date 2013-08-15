@@ -1,4 +1,6 @@
 ﻿#===================================
+# MenuScreen While Message (MSWM)
+#===================================
 # by bStefan aka. regendo
 # by request from AABattery
 # : http://www.rpgmakervxace.net/index.php?/user/608-aabattery/
