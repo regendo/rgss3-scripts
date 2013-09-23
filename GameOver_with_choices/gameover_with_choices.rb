@@ -21,19 +21,16 @@
 #========================
 # CHANGELOG
 #========================
-# current release: 2.1-gowc
+# current release: 2.2-gowc pre
 # current release notes:
 # # new features:
-# # # chance to lose gold on battle retry
-# # # chance to lose regular items on battle retry
-# # # chance to lose unequipped armour parts on battle retry
-# # # chance to lose unequipped weapons on battle retry
+# # # hp, mp, tp, states can be reset upon battle retry
 # # bugfixes:
-# # # items used in the first and subsequent retries are now properly restored
 # # not working as intended:
 # # missing features:
 # # # player does not get notified about losing gold/items
 #------------------------
+# 2.2   - now able to reset hp, mp, tp, states when retrying battles
 # 2.1   - now has a chance to lose gold, items, armour parts, weapons upon retrying battles
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
@@ -49,51 +46,51 @@
 #-------------------------------
 # class Scene_Gameover:
 # # 2 aliases
-# # # start_with_regendo_gameover_window
-# # # regendo_gowc_goto_title
-# # 2 overwrites
-# # # update
-# # # pre_terminate
+# # # def start_with_regendo_gameover_window
+# # # def regendo_gowc_goto_title
+# # 2 def overwrites
+# # # def update
+# # # def pre_terminate
 # # 11 new methods
-# # # create_command_window
-# # # set_handlers
-# # # close_command_window
-# # # command_retry
-# # # command_load_game
-# # # command_shutdown
-# # # regendo_gowc_lose_gold
-# # # regendo_gowc_lose_items
-# # # regendo_gowc_check_rng(percentage)
-# # # set_regendo_gowc_values(gowc_values)
-# # # set_defeat
+# # # def create_command_window
+# # # def set_handlers
+# # # def close_command_window
+# # # def command_retry
+# # # def command_load_game
+# # # def command_shutdown
+# # # def regendo_gowc_lose_gold
+# # # def regendo_gowc_lose_items
+# # # def regendo_gowc_check_rng(percentage)
+# # # def set_regendo_gowc_values(gowc_values)
+# # # def set_defeat
 #-------------------------------
 # class Window_GameOver:
 # # completely new
 #-------------------------------
 # class Game_Party:
 # # 6 new methods
-# # # regendo_gowc_get_items
-# # # regendo_gowc_get_weapons
-# # # regendo_gowc_get_armours
-# # # regendo_gowc_set_items(items)
-# # # regendo_gowc_set_weapons(weapons)
-# # # regendo_gowc_set_armours(armours)
+# # # def regendo_gowc_get_items
+# # # def regendo_gowc_get_weapons
+# # # def regendo_gowc_get_armours
+# # # def regendo_gowc_set_items(items)
+# # # def regendo_gowc_set_weapons(weapons)
+# # # def regendo_gowc_set_armours(armours)
 # # 2 aliases
-# # # regendo_gowc_get_armors
-# # # regendo_gowc_set_armors(armors)
+# # # def regendo_gowc_get_armors
+# # # def regendo_gowc_set_armors(armors)
 #-------------------------------
 # module BattleManager:
 # # 2 aliases
-# # # setup_regendo_gowc
-# # # save_regendo_gowc_bgms
+# # # def setup_regendo_gowc
+# # # def save_regendo_gowc_bgms
 # # 5 new methods
-# # # setup_regendo_gowc_retry
-# # # initialize_regendo_gowc_values
-# # # regendo_gowc_do_lose_items
-# # # set_regendo_gowc_bgms(bgm, bgs)
-# # # regendo_gowc_get_iaw
+# # # def setup_regendo_gowc_retry
+# # # def initialize_regendo_gowc_values
+# # # def regendo_gowc_do_lose_items
+# # # def set_regendo_gowc_bgms(bgm, bgs)
+# # # def regendo_gowc_get_iaw
 # # 1 overwrite
-# # # process_defeat
+# # # def process_defeat
 #========================
 
 module Regendo
@@ -144,6 +141,11 @@ module Regendo
     REGAIN_ITEMS = true
     REGAIN_ARMOURS = true
     REGAIN_WEAPONS = true
+    
+    # fully restore party?
+    # if true, hp, mp, tp, and states will be reset to the beginning of the initial battle
+    # if false, the party will be revived and fully healed
+    FULL_RESTORE = true
     
     # chance to lose gold on battle retry
     # 1: lose gold
@@ -220,6 +222,21 @@ class Scene_Gameover < Scene_Base
     regendo_gowc_goto_title
   end
   
+  def restore_members
+    values = @regendo_gowc_values
+    $game_party.members.each_with_index do |member, index|
+      member.hp = values[:hp][index]
+      member.mp = values[:mp][index]
+      member.tp = values[:tp][index]
+      member.clear_states
+      values[:states][index].each do |state|
+        member.add_state(state)
+      end
+      member.state_turns = values[:state_turns][index]
+      member.state_steps = values[:state_turns][index]
+    end
+  end
+  
   def command_retry
     SceneManager.goto(Scene_Battle)
     fadeout_all
@@ -228,8 +245,12 @@ class Scene_Gameover < Scene_Base
     regendo_gowc_lose_items
     
     BattleManager.setup_regendo_gowc_retry(@regendo_gowc_values)
-    $game_party.members.each do |member|
-      member.recover_all
+    if Regendo::GameOver_Window::FULL_RESTORE
+      restore_members
+    else
+      $game_party.members.each do |member|
+        member.recover_all
+      end
     end
     
     items = Marshal.load(Marshal.dump(@regendo_gowc_values[:items]))
@@ -443,7 +464,28 @@ module BattleManager
     @regendo_gameover_values[:times_retry] = 0
     @regendo_gameover_values[:items_lost] = { :item => {}, :armour => {}, :weapon => {} }
     @regendo_gameover_values[:items_scheduled_lose] = { :item => {}, :armour => {}, :weapon => {} }
+    @regendo_gameover_values[:hp] = []
+    @regendo_gameover_values[:mp] = []
+    @regendo_gameover_values[:tp] = []
+    @regendo_gameover_values[:states] = []
+    @regendo_gameover_values[:state_turns] = []
+    @regendo_gameover_values[:state_steps] = []
+    regendo_gowc_get_party
     regendo_gowc_get_iaw
+  end
+  
+  def self.regendo_gowc_get_party
+    $game_party.members.each_with_index do |member, index|
+      @regendo_gameover_values[:hp][index] = Marshal.load(Marshal.dump(member.hp))
+      @regendo_gameover_values[:mp][index] = Marshal.load(Marshal.dump(member.mp))
+      @regendo_gameover_values[:tp][index] = Marshal.load(Marshal.dump(member.tp))
+      @regendo_gameover_values[:states][index] = []
+      member.states.each do |state|
+        @regendo_gameover_values[:states][index].push(state.id)
+      end
+      @regendo_gameover_values[:state_turns][index] = Marshal.load(Marshal.dump(member.state_turns))
+      @regendo_gameover_values[:state_steps][index] = Marshal.load(Marshal.dump(member.state_steps))
+    end
   end
   
   def self.regendo_gowc_do_lose_items
@@ -503,4 +545,9 @@ module BattleManager
     @regendo_gameover_values[:armours] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_armours))
     @regendo_gameover_values[:weapons] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_weapons))
   end
+end
+
+class Game_BattlerBase
+  attr_accessor :state_turns
+  attr_accessor :state_steps
 end
