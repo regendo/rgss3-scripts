@@ -25,8 +25,10 @@
 # current release notes:
 # # new features:
 # # # hp, mp, tp, states can be reset upon battle retry
+# # # BattleManager's @regendo_gameover_values now gets disposed after battle
 # # bugfixes:
 # # not working as intended:
+# # # tp is not actually being reset but rather generated anew.
 # # missing features:
 # # # player does not get notified about losing gold/items
 #------------------------
@@ -48,10 +50,10 @@
 # # 2 aliases
 # # # def start_with_regendo_gameover_window
 # # # def regendo_gowc_goto_title
-# # 2 def overwrites
+# # 2 overwrites
 # # # def update
 # # # def pre_terminate
-# # 11 new methods
+# # 12 new methods
 # # # def create_command_window
 # # # def set_handlers
 # # # def close_command_window
@@ -61,11 +63,17 @@
 # # # def regendo_gowc_lose_gold
 # # # def regendo_gowc_lose_items
 # # # def regendo_gowc_check_rng(percentage)
+# # # def restore_members
 # # # def set_regendo_gowc_values(gowc_values)
 # # # def set_defeat
 #-------------------------------
 # class Window_GameOver:
 # # completely new
+#-------------------------------
+# class Game_BattlerBase
+# # 2 attr_accessors
+# # # @state_turns
+# # # @state_steps
 #-------------------------------
 # class Game_Party:
 # # 6 new methods
@@ -80,13 +88,15 @@
 # # # def regendo_gowc_set_armors(armors)
 #-------------------------------
 # module BattleManager:
-# # 2 aliases
+# # 3 aliases
+# # # def dispose_gowc_battle_end
 # # # def setup_regendo_gowc
 # # # def save_regendo_gowc_bgms
-# # 5 new methods
+# # 6 new methods
 # # # def setup_regendo_gowc_retry
 # # # def initialize_regendo_gowc_values
 # # # def regendo_gowc_do_lose_items
+# # # def regendo_gowc_get_party
 # # # def set_regendo_gowc_bgms(bgm, bgs)
 # # # def regendo_gowc_get_iaw
 # # 1 overwrite
@@ -223,7 +233,7 @@ class Scene_Gameover < Scene_Base
   end
   
   def restore_members
-    values = @regendo_gowc_values
+    values = Marshal.load(Marshal.dump(@regendo_gowc_values))
     $game_party.members.each_with_index do |member, index|
       member.hp = values[:hp][index]
       member.mp = values[:mp][index]
@@ -434,6 +444,7 @@ module BattleManager
   class << self
     alias_method :setup_regendo_gowc, :setup
     alias_method :save_regendo_gowc_bgms, :save_bgm_and_bgs
+    alias_method :dispose_gowc_battle_end, :battle_end
   end
   
   def self.setup_regendo_gowc_retry(gowc_values)
@@ -524,6 +535,11 @@ module BattleManager
     end
     battle_end(2)
     return true
+  end
+  
+  def self.battle_end(result)
+    @regendo_gameover_values = nil
+    dispose_gowc_battle_end(result)
   end
   
   def self.save_bgm_and_bgs
