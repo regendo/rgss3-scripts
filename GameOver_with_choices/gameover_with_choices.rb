@@ -21,18 +21,15 @@
 #========================
 # CHANGELOG
 #========================
-# current release: 2.2-gowc pre
+# current release: 3.0-gowc pre
 # current release notes:
 # # new features:
-# # # hp, mp, tp, states can be reset upon battle retry
-# # # BattleManager's @regendo_gameover_values now gets disposed after battle
+# # # game-over retry functionality has been made a seperate script, GameOver:Retry_Battle (GORB)
 # # bugfixes:
 # # not working as intended:
-# # # tp is not actually being reset but rather generated anew.
 # # missing features:
-# # # player does not get notified about losing gold/items
 #------------------------
-# 2.2   - now able to reset hp, mp, tp, states when retrying battles
+# 3.0   - game-over retry functionality has been made a separate script, GameOver:Retry_Battle (GORB)
 # 2.1   - now has a chance to lose gold, items, armour parts, weapons upon retrying battles
 # 2.0   - complete rewrite
 # 1.3   - now able to regain items, weapons, armours when retrying battles
@@ -46,61 +43,6 @@
 #========================
 # Compability check:
 #-------------------------------
-# class Scene_Gameover:
-# # 2 aliases
-# # # def start_with_regendo_gameover_window
-# # # def regendo_gowc_goto_title
-# # 2 overwrites
-# # # def update
-# # # def pre_terminate
-# # 12 new methods
-# # # def create_command_window
-# # # def set_handlers
-# # # def close_command_window
-# # # def command_retry
-# # # def command_load_game
-# # # def command_shutdown
-# # # def regendo_gowc_lose_gold
-# # # def regendo_gowc_lose_items
-# # # def regendo_gowc_check_rng(percentage)
-# # # def restore_members
-# # # def set_regendo_gowc_values(gowc_values)
-# # # def set_defeat
-#-------------------------------
-# class Window_GameOver:
-# # completely new
-#-------------------------------
-# class Game_BattlerBase
-# # 2 attr_accessors
-# # # @state_turns
-# # # @state_steps
-#-------------------------------
-# class Game_Party:
-# # 6 new methods
-# # # def regendo_gowc_get_items
-# # # def regendo_gowc_get_weapons
-# # # def regendo_gowc_get_armours
-# # # def regendo_gowc_set_items(items)
-# # # def regendo_gowc_set_weapons(weapons)
-# # # def regendo_gowc_set_armours(armours)
-# # 2 aliases
-# # # def regendo_gowc_get_armors
-# # # def regendo_gowc_set_armors(armors)
-#-------------------------------
-# module BattleManager:
-# # 3 aliases
-# # # def dispose_gowc_battle_end
-# # # def setup_regendo_gowc
-# # # def save_regendo_gowc_bgms
-# # 6 new methods
-# # # def setup_regendo_gowc_retry
-# # # def initialize_regendo_gowc_values
-# # # def regendo_gowc_do_lose_items
-# # # def regendo_gowc_get_party
-# # # def set_regendo_gowc_bgms(bgm, bgs)
-# # # def regendo_gowc_get_iaw
-# # 1 overwrite
-# # # def process_defeat
 #========================
 
 module Regendo
@@ -111,23 +53,16 @@ module Regendo
       @scripts[key] == true
     end
   end
-  @scripts["GameOver_Window"] = true
+  @scripts[:GOWC] = true
   
-  module GameOver_Window
+  module GOWC
   
     # CUSTOMISATION OPTIONS
     
-    RETRY_TEXT = "Retry Battle"
-    
     LOAD_TEXT = "Load Savefile"
-  
-    # allows a lost battle to be retried
-    # retry only works when "continue even if lose" is not checked
-    # set by script call: Regendo::GameOver_Window::ALLOW_RETRY = true/false
-    ALLOW_RETRY = true
     
     # allows loading a save file
-    # set by script call: Regendo::GameOver_Window::ALLOW_LOAD_GAME = true/false
+    # set by script call: Regendo::GOWC::ALLOW_LOAD_GAME = true/false
     ALLOW_LOAD_GAME = true
     
     
@@ -147,21 +82,23 @@ module Regendo
     WIDTH = "Graphics.width * 0.4"
     
     # regain lost/used stuff when retrying battle?
-    # set by script call: Regendo::GameOver_Window::REGAIN_ITEMS/ARMOURS/WEAPONS = true/false
+    # set by script call: Regendo::GORB::REGAIN_ITEMS/ARMOURS/WEAPONS = true/false
     REGAIN_ITEMS = true
     REGAIN_ARMOURS = true
     REGAIN_WEAPONS = true
     
     # fully restore party?
-    # if true, hp, mp, tp, and states will be reset to the beginning of the initial battle
+    # if true, hp, mp, and states will be reset to the beginning of the initial battle
     # if false, the party will be revived and fully healed
+    # set by scriot call: Regendo::GORB::FULL_RESTORE = true/false
     FULL_RESTORE = true
     
-    # chance to lose gold on battle retry
+    # chance to lose gold on battle retry as a string
     # 1: lose gold
     # 0: don't lose gold
     # use floating point numbers for percentages, e.g. 0.854 for a 85.4% chance of losing gold
-    LOSE_GOLD_CHANCE = 0.5
+    # you can do formulas, e.g. base the loss chance on equipped items or the party leader's luck stat.
+    LOSE_GOLD_CHANCE = "0.5"
     # amount of gold lost as a string
     # examples:
     # # "500": lose 500 gold
@@ -216,7 +153,7 @@ class Scene_Gameover < Scene_Base
   end
   
   def set_handlers
-    @command_window.set_handler(:retry, method(:command_retry)) if @defeat && Regendo::GameOver_Window::ALLOW_RETRY
+    @command_window.set_handler(:retry, method(:command_retry)) if @defeat && Regendo::GOWC::ALLOW_RETRY
     @command_window.set_handler(:load, method(:command_load_game))
     @command_window.set_handler(:to_title, method(:goto_title))
     @command_window.set_handler(:shutdown, method(:command_shutdown))
@@ -255,7 +192,7 @@ class Scene_Gameover < Scene_Base
     regendo_gowc_lose_items
     
     BattleManager.setup_regendo_gowc_retry(@regendo_gowc_values)
-    if Regendo::GameOver_Window::FULL_RESTORE
+    if Regendo::GOWC::FULL_RESTORE
       restore_members
     else
       $game_party.members.each do |member|
@@ -266,9 +203,9 @@ class Scene_Gameover < Scene_Base
     items = Marshal.load(Marshal.dump(@regendo_gowc_values[:items]))
     weapons = Marshal.load(Marshal.dump(@regendo_gowc_values[:weapons]))
     armours = Marshal.load(Marshal.dump(@regendo_gowc_values[:armours]))
-    $game_party.regendo_gowc_set_items(items) if Regendo::GameOver_Window::REGAIN_ITEMS
-    $game_party.regendo_gowc_set_armours(armours) if Regendo::GameOver_Window::REGAIN_ARMOURS
-    $game_party.regendo_gowc_set_weapons(weapons) if Regendo::GameOver_Window::REGAIN_WEAPONS
+    $game_party.regendo_gowc_set_items(items) if Regendo::GOWC::REGAIN_ITEMS
+    $game_party.regendo_gowc_set_armours(armours) if Regendo::GOWC::REGAIN_ARMOURS
+    $game_party.regendo_gowc_set_weapons(weapons) if Regendo::GOWC::REGAIN_WEAPONS
     
     BattleManager.play_battle_bgm
     Sound.play_battle_start
@@ -284,8 +221,8 @@ class Scene_Gameover < Scene_Base
   end
   
   def regendo_gowc_lose_gold
-    return unless regendo_gowc_check_rng(Regendo::GameOver_Window::LOSE_GOLD_CHANCE)
-    amount = [eval(Regendo::GameOver_Window::LOSE_GOLD_AMOUNT).abs.round, $game_party.gold].min
+    return unless regendo_gowc_check_rng(Regendo::GOWC::LOSE_GOLD_CHANCE)
+    amount = [eval(Regendo::GOWC::LOSE_GOLD_AMOUNT).abs.round, $game_party.gold].min
     $game_party.lose_gold(amount)
     @regendo_gowc_values[:gold] += amount
   end
@@ -299,12 +236,12 @@ class Scene_Gameover < Scene_Base
     # removes key items from list
     items.delete_if { |key, value| $data_items[key].key_item? }
     
-    Regendo::GameOver_Window::LOSE_ITEMS_MAX_TIMES.times do
-      next unless regendo_gowc_check_rng(Regendo::GameOver_Window::LOSE_ITEMS_CHANCE)
+    Regendo::GOWC::LOSE_ITEMS_MAX_TIMES.times do
+      next unless regendo_gowc_check_rng(Regendo::GOWC::LOSE_ITEMS_CHANCE)
       
-      i = Regendo::GameOver_Window::CAN_LOSE_ITEMS && !items.empty?
-      a = Regendo::GameOver_Window::CAN_LOSE_ARMOURS && !armours.empty?
-      w = Regendo::GameOver_Window::CAN_LOSE_WEAPONS && !weapons.empty?
+      i = Regendo::GOWC::CAN_LOSE_ITEMS && !items.empty?
+      a = Regendo::GOWC::CAN_LOSE_ARMOURS && !armours.empty?
+      w = Regendo::GOWC::CAN_LOSE_WEAPONS && !weapons.empty?
       
       val = [i, a, w].count(true)
       case val
@@ -376,7 +313,7 @@ class Scene_Gameover < Scene_Base
   
 end
 
-if (Regendo.contains?("Horizontal_Command") && Regendo::GameOver_Window::USE_MULTIPLE_COLS)
+if (Regendo.contains?("Horizontal_Command") && Regendo::GOWC::USE_MULTIPLE_COLS)
   class Window_GameOver < Window_HorizontalCommand
   end
 else
@@ -387,9 +324,9 @@ end
 class Window_GameOver
 
   def initialize
-    if (Regendo.contains?("Horizontal_Command") && Regendo::GameOver_Window::USE_MULTIPLE_COLS)
+    if (Regendo.contains?("Horizontal_Command") && Regendo::GOWC::USE_MULTIPLE_COLS)
       @horz = true
-      super(0, 0, Regendo::GameOver_Window::COL_NUMBER)
+      super(0, 0, Regendo::GOWC::COL_NUMBER)
     else
       @horz = false
       super(0, 0)
@@ -401,23 +338,23 @@ class Window_GameOver
   
   def window_width(width = 255)
     return super if @horz
-    @width = eval(Regendo::GameOver_Window::WIDTH)
+    @width = eval(Regendo::GOWC::WIDTH)
   end
   
   def update_placement
-    self.x = eval(Regendo::GameOver_Window::X_COORD)
-    self.y = eval(Regendo::GameOver_Window::Y_COORD)
+    self.x = eval(Regendo::GOWC::X_COORD)
+    self.y = eval(Regendo::GOWC::Y_COORD)
   end
   
   def make_command_list
-    add_command(retry_text, :retry) if Regendo::GameOver_Window::ALLOW_RETRY
-    add_command(load_text, :load, can_load_game?) if Regendo::GameOver_Window::ALLOW_LOAD_GAME
+    add_command(retry_text, :retry) if Regendo::GOWC::ALLOW_RETRY
+    add_command(load_text, :load, can_load_game?) if Regendo::GOWC::ALLOW_LOAD_GAME
     add_command(Vocab.to_title, :to_title)
     add_command(Vocab.shutdown, :shutdown)
   end
   
-  def retry_text; Regendo::GameOver_Window::RETRY_TEXT; end
-  def load_text; Regendo::GameOver_Window::LOAD_TEXT; end
+  def retry_text; Regendo::GOWC::RETRY_TEXT; end
+  def load_text; Regendo::GOWC::LOAD_TEXT; end
   
   def can_load_game?
     DataManager.save_file_exists?
