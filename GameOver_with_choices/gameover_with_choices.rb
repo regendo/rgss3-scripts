@@ -390,7 +390,6 @@ module BattleManager
   class << self
     alias_method :setup_regendo_gowc, :setup
     alias_method :save_regendo_gowc_bgms, :save_bgm_and_bgs
-    alias_method :dispose_gowc_battle_end, :battle_end
   end
   
   def self.setup_regendo_gowc_retry(gowc_values)
@@ -405,44 +404,21 @@ module BattleManager
   end
   
   def self.setup(troop_id, can_escape, can_lose)
+    gowc_pre_setup(troop_id, can_escape, can_lose)
     setup_regendo_gowc(troop_id, can_escape, can_lose)
-    initialize_regendo_gowc_values(troop_id)
-    set_regendo_gowc_bgms(@regendo_gameover_values[:bgm], @regendo_gameover_values[:bgs])
+    gowc_post_setup
   end
+  
+  def self.gowc_pre_setup(troop_id, can_escape, can_lose); end
+  def self.gowc_post_setup; end
   
   def self.initialize_regendo_gowc_values(troop_id)
     return if @regendo_gameover_values
     @regendo_gameover_values = Hash.new
     @regendo_gameover_values[:gold] = 0
-    @regendo_gameover_values[:troop_id] = troop_id
-    @regendo_gameover_values[:can_escape] = @can_escape
-    @regendo_gameover_values[:can_lose] = @can_lose
-    @regendo_gameover_values[:is_retry] = false
-    @regendo_gameover_values[:times_retry] = 0
     @regendo_gameover_values[:items_lost] = { :item => {}, :armour => {}, :weapon => {} }
     @regendo_gameover_values[:items_scheduled_lose] = { :item => {}, :armour => {}, :weapon => {} }
-    @regendo_gameover_values[:hp] = []
-    @regendo_gameover_values[:mp] = []
-    @regendo_gameover_values[:tp] = []
-    @regendo_gameover_values[:states] = []
-    @regendo_gameover_values[:state_turns] = []
-    @regendo_gameover_values[:state_steps] = []
-    regendo_gowc_get_party
     regendo_gowc_get_iaw
-  end
-  
-  def self.regendo_gowc_get_party
-    $game_party.members.each_with_index do |member, index|
-      @regendo_gameover_values[:hp][index] = Marshal.load(Marshal.dump(member.hp))
-      @regendo_gameover_values[:mp][index] = Marshal.load(Marshal.dump(member.mp))
-      @regendo_gameover_values[:tp][index] = Marshal.load(Marshal.dump(member.tp))
-      @regendo_gameover_values[:states][index] = []
-      member.states.each do |state|
-        @regendo_gameover_values[:states][index].push(state.id)
-      end
-      @regendo_gameover_values[:state_turns][index] = Marshal.load(Marshal.dump(member.state_turns))
-      @regendo_gameover_values[:state_steps][index] = Marshal.load(Marshal.dump(member.state_steps))
-    end
   end
   
   def self.regendo_gowc_do_lose_items
@@ -465,6 +441,8 @@ module BattleManager
     end#each_pair
   end#method
   
+  # unfortunately this needed to be overwritten
+  # except for the addition of the parts marked as new, everything is the same as in the standard script
   def self.process_defeat
     $game_message.add(sprintf(Vocab::Defeat, $game_party.name))
     wait_for_message
@@ -473,20 +451,16 @@ module BattleManager
       replay_bgm_and_bgs
       SceneManager.return
     else
+      gowc_pre_transfer # new
       SceneManager.goto(Scene_Gameover)
-      # start of new part
-      SceneManager.scene.set_defeat
-      SceneManager.scene.set_regendo_gowc_values(@regendo_gameover_values)
-      # end of new part
+      gowc_post_transfer # new
     end
     battle_end(2)
     return true
   end
   
-  def self.battle_end(result)
-    @regendo_gameover_values = nil
-    dispose_gowc_battle_end(result)
-  end
+  def self.gowc_pre_transfer; end
+  def self.gowc_post_transfer; end
   
   def self.save_bgm_and_bgs
     save_regendo_gowc_bgms

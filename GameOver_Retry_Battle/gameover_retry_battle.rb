@@ -77,9 +77,9 @@ module Regendo
     # the retry option will not be displayed if locked
     RETRY_UNLOCKED = true
     
-  end
+  end # module GORB
   
-end
+end # module Regendo
 
 if Regendo.contains?(:GOWC) # no changes unless the required GOWC script is installed
 
@@ -103,7 +103,7 @@ class Window_GameOver
     SceneManager.scene.can_retry?
   end
   
-end
+end # Window_GameOver
 
 class Scene_Gameover < Scene_Base
 
@@ -140,7 +140,68 @@ class Scene_Gameover < Scene_Base
     # TODO
   end
   
-end
+end # Scene_Gameover
+
+module BattleManager
+  
+  class << self
+    alias_method :battle_end_gorb, :battle_end
+    alias_method :gorb_post_transfer, :gowc_post_transfer
+    alias_method :gorb_post_setup, :gowc_post_setup
+  end
+  
+  def self.battle_end(result)
+    @gorb_values = nil
+    battle_end_gorb(result)
+  end
+  
+  def self.gowc_post_transfer
+    SceneManager.scene.set_retry(@gorb_values)
+    gorb_post_transfer
+  end
+  
+  def self.gowc_post_setup
+    init_gorb_values
+    gorb_post_setup
+  end
+  
+  def self.init_gorb_values
+    return if @gorb_values
+    @gorb_values = {
+      :troop_id => $game_troop.troop.troop_id,
+      :can_escape => @can_escape,
+      :can_lose => @can_lose,
+      :is_retry => false,
+      :times_retried => 0,
+    }
+    init_gorb_party_values
+    init_additional_gorb_values
+  end
+  
+  def self.init_gorb_party_values
+    v = @gorb_values[:party] = []
+    $game_party.members.each_with_index do |member, index|
+      v[index] = {
+        :hp => Marshal.load(Marshal.dump(member.hp))
+        :mp => Marshal.load(Marshal.dump(member.mp))
+        :states => []
+        :state_turns => Marshal.load(Marshal.dump(member.state_turns))
+        :state_steps => Marshal.load(Marshal.dump(member.state_steps))
+      }
+      member.states.each do |state|
+        v[index][:states].push(state.id)
+      end # members.states.each
+    end # $game_party.members.each_with_index
+  end
+  
+  def self.init_additional_gorb_values; end
+  
+end # module BattleManager
+
+class Game_BattlerBase
+  attr_accessor :state_turns
+  attr_accessor :state_steps
+end # class Game_BattlerBase
 
 else # if GOWC isn't installed
   # displays an informative error message
