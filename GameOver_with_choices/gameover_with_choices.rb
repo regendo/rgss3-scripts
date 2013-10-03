@@ -153,11 +153,15 @@ class Scene_Gameover < Scene_Base
   end
   
   def set_handlers
-    @command_window.set_handler(:retry, method(:command_retry)) if @defeat && Regendo::GOWC::ALLOW_RETRY
+    set_handlers_first
     @command_window.set_handler(:load, method(:command_load_game))
     @command_window.set_handler(:to_title, method(:goto_title))
     @command_window.set_handler(:shutdown, method(:command_shutdown))
+    set_handlers_last
   end
+  
+  def set_handlers_first; end
+  def set_handlers_last; end
   
   def close_command_window
     @command_window.close if @command_window
@@ -303,32 +307,24 @@ class Scene_Gameover < Scene_Base
     roll <= chance
   end
   
-  def set_regendo_gowc_values(values)
-    @regendo_gowc_values = values
-  end
-  
-  def set_defeat
-    @defeat = true
-  end
-  
 end
 
 if (Regendo.contains?("Horizontal_Command") && Regendo::GOWC::USE_MULTIPLE_COLS)
   class Window_GameOver < Window_HorizontalCommand
+    def initialize; @horz = true; end
   end
 else
   class Window_GameOver < Window_Command
+    def initialize; @horz = false; end
   end
 end
 
 class Window_GameOver
 
   def initialize
-    if (Regendo.contains?("Horizontal_Command") && Regendo::GOWC::USE_MULTIPLE_COLS)
-      @horz = true
-      super(0, 0, Regendo::GOWC::COL_NUMBER)
+    if is_mcis_window?
+      super(0, 0, col_max)
     else
-      @horz = false
       super(0, 0)
     end
     update_placement
@@ -336,8 +332,16 @@ class Window_GameOver
     open
   end
   
+  def is_mcis_window?
+    return @horz
+  end
+  
+  def col_max
+    Regendo::GOWC::COL_NUMBER
+  end
+  
   def window_width(width = 255)
-    return super if @horz
+    return super if is_mcis_window?
     @width = eval(Regendo::GOWC::WIDTH)
   end
   
@@ -347,14 +351,19 @@ class Window_GameOver
   end
   
   def make_command_list
-    add_command(retry_text, :retry) if Regendo::GOWC::ALLOW_RETRY
+    add_commands_first
     add_command(load_text, :load, can_load_game?) if Regendo::GOWC::ALLOW_LOAD_GAME
     add_command(Vocab.to_title, :to_title)
     add_command(Vocab.shutdown, :shutdown)
+    add_commands_last
   end
   
-  def retry_text; Regendo::GOWC::RETRY_TEXT; end
-  def load_text; Regendo::GOWC::LOAD_TEXT; end
+  def add_commands_first; end
+  def add_commands_last; end
+  
+  def load_text
+    Regendo::GOWC::LOAD_TEXT
+  end
   
   def can_load_game?
     DataManager.save_file_exists?

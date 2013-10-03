@@ -7,9 +7,7 @@
 # regendo, aka. bStefan
 #--------------------------------
 # up-to-date versions of this script are exclusively available at
-###########################################################################################
-# < insert RMVXAce.net script topic here >                                                   #####################################
-###########################################################################################
+# TODO
 # and https://github.com/regendo/rgss3-scripts
 #=========================
 
@@ -75,10 +73,9 @@ module Regendo
     # CUSTOMISATION OPTIONS
     RETRY_TEXT = "Retry Battle!"
     
-    # allows a lost battle to be retried
-    # retry only works when "continue even if lose" is not checked
-    # set by script call: Regendo::GORB::ALLOW_RETRY = true/false
-    ALLOW_RETRY = true
+    # allows you to lock the retry option away for certain time periods
+    # the retry option will not be displayed if locked
+    RETRY_UNLOCKED = true
     
   end
   
@@ -86,13 +83,70 @@ end
 
 if Regendo.contains?(:GOWC) # no changes unless the required GOWC script is installed
 
+class Window_GameOver
+  
+  alias :add_gorb_first :add_commands_first
+  def add_commands_first
+    add_command(:retry_text, :retry, can_retry?) if retry_unlocked?
+    add_gorb_first
+  end
+  
+  def retry_text
+    Regendo::GORB::RETRY_TEXT
+  end
+  
+  def retry_unlocked?
+    SceneManager.scene.retry_unlocked?
+  end
+  
+  def can_retry?
+    SceneManager.scene.can_retry?
+  end
+  
+end
 
+class Scene_Gameover < Scene_Base
+
+  alias :start_regendo_gorb :start
+  def start
+    @retry_possible = false
+    start_regendo_gorb
+  end
+
+  alias :set_gorb_first :set_handlers_first
+  def set_handlers_first
+    @command_window.set_handler(:retry, method(:command_retry)) if retry_unlocked?
+    set_gorb_first
+  end
+  
+  # decides if the retry option will be displayed
+  def retry_unlocked?
+    return false unless Regendo::GORB::RETRY_UNLOCKED
+    return @retry_possible # only true if the game over resulted from a lost battle
+  end
+  
+  # decides if the retry option will be selectable
+  def can_retry?
+    return true
+  end
+  
+  # is called if a battle was lost
+  def set_retry(gorb_values)
+    @retry_possible = true
+    @gorb_values = gorb_values
+  end
+  
+  def command_retry
+    # TODO
+  end
+  
+end
 
 else # if GOWC isn't installed
   # displays an informative error message
   msgbox "Your project uses regendo's GameOver:Retry_Battle script." +
   "\nThis script requires GameOver_With_Choices v3.0 or later to work." +
   "\nIt has been noticed that this condition is not met." +
-  "\nYou can get the script on github.com/regendo/rgss3-scripts" +
-  "\nThis script will be disabled in the meanwhile to prevent crashes."
+  "\nYou can easily get the script at github.com/regendo/rgss3-scripts" +
+  "\nGO:RB has been disabled in the meanwhile to prevent crashes."
 end
