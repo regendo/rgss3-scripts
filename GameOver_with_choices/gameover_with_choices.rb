@@ -371,39 +371,13 @@ class Window_GameOver
   
 end
 
-class Game_Party < Game_Unit
-
-  def regendo_gowc_get_items; return @items; end
-  def regendo_gowc_get_weapons; return @weapons; end
-  def regendo_gowc_get_armours; return @armors; end
-  alias :regendo_gowc_get_armors :regendo_gowc_get_armours
-  
-  def regendo_gowc_set_items(items); @items = items; end
-  def regendo_gowc_set_weapons(weapons); @weapons = weapons; end
-  def regendo_gowc_set_armours(armours); @armors = armours; end
-  alias :regendo_gowc_set_armors :regendo_gowc_set_armours
-  
-end
-
 module BattleManager
   
   class << self
     alias_method :setup_regendo_gowc, :setup
-    alias_method :save_regendo_gowc_bgms, :save_bgm_and_bgs
   end
   
-  def self.setup_regendo_gowc_retry(gowc_values)
-    @regendo_gameover_values = gowc_values
-    troop_id = @regendo_gameover_values[:troop_id]
-    can_escape = @regendo_gameover_values[:can_lose]
-    can_lose = @regendo_gameover_values[:can_lose]
-    @regendo_gameover_values[:is_retry] = true
-    @regendo_gameover_values[:times_retry] += 1
-    setup(troop_id, can_escape, can_lose)
-    regendo_gowc_do_lose_items
-  end
-  
-  def self.setup(troop_id, can_escape, can_lose)
+  def self.setup(troop_id, can_escape = true, can_lose = false)
     gowc_pre_setup(troop_id, can_escape, can_lose)
     setup_regendo_gowc(troop_id, can_escape, can_lose)
     gowc_post_setup
@@ -418,7 +392,6 @@ module BattleManager
     @regendo_gameover_values[:gold] = 0
     @regendo_gameover_values[:items_lost] = { :item => {}, :armour => {}, :weapon => {} }
     @regendo_gameover_values[:items_scheduled_lose] = { :item => {}, :armour => {}, :weapon => {} }
-    regendo_gowc_get_iaw
   end
   
   def self.regendo_gowc_do_lose_items
@@ -461,29 +434,4 @@ module BattleManager
   
   def self.gowc_pre_transfer; end
   def self.gowc_post_transfer; end
-  
-  def self.save_bgm_and_bgs
-    save_regendo_gowc_bgms
-    @regendo_gameover_values[:bgm] = @map_bgm
-    @regendo_gameover_values[:bgs] = @map_bgs
-  end
-  
-  def self.set_regendo_gowc_bgms(bgm, bgs)
-    @map_bgm = bgm
-    @map_bgs = bgs
-    @regendo_gameover_values[:bgm] = @map_bgm
-    @regendo_gameover_values[:bgs] = @map_bgs
-  end
-  
-  # gets party's items, armours, weapons
-  def self.regendo_gowc_get_iaw
-    @regendo_gameover_values[:items] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_items))
-    @regendo_gameover_values[:armours] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_armours))
-    @regendo_gameover_values[:weapons] = Marshal.load(Marshal.dump($game_party.regendo_gowc_get_weapons))
-  end
-end
-
-class Game_BattlerBase
-  attr_accessor :state_turns
-  attr_accessor :state_steps
 end

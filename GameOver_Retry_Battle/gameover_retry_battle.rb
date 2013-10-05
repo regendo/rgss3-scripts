@@ -156,6 +156,9 @@ module BattleManager
   end
   
   def self.gowc_post_transfer
+    init_gorb_items
+    @gorb_values[:bgm] = @map_bgm
+    @gorb_values[:bgs] = @map_bgs
     SceneManager.scene.set_retry(@gorb_values)
     gorb_post_transfer
   end
@@ -163,6 +166,25 @@ module BattleManager
   def self.gowc_post_setup
     init_gorb_values
     gorb_post_setup
+  end
+  
+  def self.regendo_gorb_setup(gorb_values)
+    @gorb_values = gorb_values
+    @gorb_values[:is_retry] = true
+    @gorb_values[:times_retried] += 1
+    troop_id = @gorb_values[:troop_id]
+    can_escape = @gorb_values[:can_escape]
+    can_lose = @gorb_values[:can_lose]
+    gorb_setup_items
+    setup(troop_id, can_escape, can_lose)
+    @map_bgm = @gorb_values[:bgm]
+    @map_bgs = @gorb_values[:bgs]
+  end
+  
+  def self.gorb_setup_items
+    $game_party.gorb_set_items(@gorb_values[:items]) if Regendo::GORB::REGAIN_ITEMS
+    $game_party.gorb_set_weapons(@gorb_values[:weapons]) if Regendo::GORB::REGAIN_ITEMS
+    $game_party.gorb_set_armours(@gorb_values[:armours]) if Regendo::GORB::REGAIN_ARMOURS
   end
   
   def self.init_gorb_values
@@ -176,6 +198,12 @@ module BattleManager
     }
     init_gorb_party_values
     init_additional_gorb_values
+  end
+  
+  def self.init_gorb_items
+    @gorb_values[:items] = Marshal.load(Marshal.dump($game_party.gorb_get_items))
+    @gorb_values[:weapons] = Marshal.load(Marshal.dump($game_party.gorb_get_weapons))
+    @gorb_values[:armours] = Marshal.load(Marshal.dump($game_party.gorb_get_armours))
   end
   
   def self.init_gorb_party_values
@@ -197,6 +225,18 @@ module BattleManager
   def self.init_additional_gorb_values; end
   
 end # module BattleManager
+
+class Game_Party < Game_Unit
+  
+  def gorb_get_items; return @items; end
+  def gorb_get_weapons; return @weapons; end
+  def gorb_get_armours; return @armors; end
+  
+  def gorb_set_items(items); @items = items; end
+  def gorb_set_weapons(weapons); @weapons = weapons; end
+  def gorb_set_armours(armours); @armors = armours; end
+  
+end
 
 class Game_BattlerBase
   attr_accessor :state_turns
