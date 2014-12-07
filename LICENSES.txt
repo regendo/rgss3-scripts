@@ -18,10 +18,17 @@ The Terms of Use specified in the latest version of README.md still apply.
   This person has permission to use any version of GOWC for their
   project "Life of a Copycat" (http://www.indiedb.com/forum/thread/life-of-a-copycat-feedback-required)
   regardless of whether or not the project will be released commercially.
-  Permission granted on 2nd Dez. 2012 via PM on RMVXAce.net
+  Permission granted on 2nd Dec. 2012 via PM on RMVXAce.net
   
 - Shadow_Of_Zeno (http://www.rpgmakervxace.net/user/34569-shadow-of-zeno/)
   
   This person has permission to use any version of TSS for one project,
   regardless of whether or not the project will be released commercially.
   Permission granted on 29th Sept. 2013 (http://www.rpgmakervxace.net/topic/299-title-screen-skip-if-no-save-file-exists/?p=129593)
+
+- Warlyte (http://www.rpgmakervxace.net/user/12186-warlyte/)
+
+  This person has permission to use any version of GOWC for their project
+  "Learning the Dark Trade" (http://www.ephixmedia.com/games.html),
+  regardless of whether or not the project will be released commercially.
+  Permission granted on 7th Dec. 2014 via PM on RMVXAce.net
